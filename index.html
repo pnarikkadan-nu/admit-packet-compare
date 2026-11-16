@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admit Packet Compare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<style>
+:root{
+  --bg:#f6f6f4; --surface:#ffffff; --surface-2:#efefec; --ink:#1c1d1f; --ink-2:#5a5d63; --line:#dcdcd7;
+  --brand:#c8102e; --up:#1b63a8; --up-bg:#e3eefa; --down:#a8510a; --down-bg:#fbeadb; --neu-bg:#ecebf6; --neu:#4a3f9a;
+  --focus:#c8102e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17181a; --surface:#1f2023; --surface-2:#2a2b2f; --ink:#ececea; --ink-2:#a3a6ad; --line:#38393e;
+    --brand:#ff4d63; --up:#7cb6f0; --up-bg:#1d3149; --down:#f2a35e; --down-bg:#45301c; --neu-bg:#2c2944; --neu:#b8afff;
+    --focus:#ff6b7d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17181a; --surface:#1f2023; --surface-2:#2a2b2f; --ink:#ececea; --ink-2:#a3a6ad; --line:#38393e;
+  --brand:#ff4d63; --up:#7cb6f0; --up-bg:#1d3149; --down:#f2a35e; --down-bg:#45301c; --neu-bg:#2c2944; --neu:#b8afff;
+  --focus:#ff6b7d; color-scheme: dark;
+}
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+*,*::before,*::after{ box-sizing:inherit; }
+body{ margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+button,input,select{ font:inherit; color:inherit; }
+:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+.wrap{ max-width:1240px; margin:0 auto; padding:0 20px 64px; }
+header.top{ border-top:4px solid var(--brand); background:var(--surface); border-bottom:1px solid var(--line); }
+header.top .wrap{ padding-top:20px; padding-bottom:20px; display:flex; gap:24px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; }
+h1{ font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif; font-weight:600; font-size:28px; line-height:1.1; margin:0; letter-spacing:-0.01em; }
+.sub{ color:var(--ink-2); margin:4px 0 0; font-size:14px; max-width:60ch; }
+.btn{ border:1px solid var(--line); background:var(--surface); padding:7px 14px; border-radius:6px; cursor:pointer; }
+.btn:hover{ border-color:var(--ink-2); }
+.btn.primary{ background:var(--brand); border-color:var(--brand); color:#fff; }
+.btn.small{ padding:3px 9px; font-size:13px; }
+
+/* drop zone */
+.drop{ margin-top:24px; border:1.5px dashed var(--line); border-radius:10px; padding:28px; text-align:center; background:var(--surface); transition:border-color .15s, background .15s; }
+.drop.over{ border-color:var(--brand); background:var(--surface-2); }
+.drop p{ margin:6px 0 0; color:var(--ink-2); font-size:14px; }
+.drop.compact{ padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; }
+.drop.compact p{ margin:0; }
+.status{ margin-top:8px; color:var(--ink-2); font-size:14px; min-height:1.5em; }
+.status.err{ color:var(--down); }
+
+/* files */
+.files{ margin-top:20px; background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.files table{ width:100%; border-collapse:collapse; }
+.files th{ text-align:left; font-weight:500; color:var(--ink-2); font-size:13px; padding:8px 12px; border-bottom:1px solid var(--line); background:var(--surface-2); }
+.files td{ padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:middle; font-size:14px; }
+.files tr:last-child td{ border-bottom:0; }
+.files input[type=text]{ border:1px solid transparent; background:transparent; padding:3px 6px; border-radius:4px; width:100%; min-width:140px; font-weight:500; }
+.files input[type=text]:hover,.files input[type=text]:focus{ border-color:var(--line); background:var(--bg); }
+.files .fn{ color:var(--ink-2); font-size:12.5px; word-break:break-all; }
+.files .center{ text-align:center; }
+.files input[type=radio]{ accent-color:var(--brand); width:16px; height:16px; }
+
+/* headline */
+.headline{ margin-top:32px; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; }
+.headline .big{ font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif; font-size:44px; font-weight:600; line-height:1; }
+.headline .what{ font-size:17px; }
+.headline .what b{ font-weight:600; }
+.legend{ display:flex; gap:14px; font-size:13px; color:var(--ink-2); margin-top:8px; flex-wrap:wrap; }
+.sw{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:5px; }
+.sw.up{ background:var(--up-bg); border:1.5px solid var(--up); }
+.sw.down{ background:var(--down-bg); border:1.5px solid var(--down); }
+.sw.neu{ background:var(--neu-bg); border:1.5px solid var(--neu); }
+
+h2{ font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif; font-weight:600; font-size:20px; margin:36px 0 10px; }
+h3{ font-size:15px; font-weight:600; margin:0; }
+.muted{ color:var(--ink-2); }
+
+/* tabs + filters */
+.bar{ position:sticky; top:0; z-index:5; background:var(--bg); padding:12px 0 10px; margin-top:28px; border-bottom:1px solid var(--line); display:flex; gap:10px 18px; flex-wrap:wrap; align-items:center; }
+body::before{ content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--bg); }
+.tabs{ display:flex; gap:2px; background:var(--surface-2); border-radius:8px; padding:3px; }
+.tabs button{ border:0; background:transparent; padding:6px 14px; border-radius:6px; cursor:pointer; color:var(--ink-2); font-weight:500; }
+.tabs button[aria-selected=true]{ background:var(--surface); color:var(--ink); box-shadow:0 0 0 1px var(--line); }
+.filters{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.filters select,.filters input[type=search]{ border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:6px 8px; max-width:220px; font-size:14px; }
+.filters label.chk{ font-size:14px; display:flex; align-items:center; gap:6px; color:var(--ink-2); }
+.spacer{ flex:1; }
+
+/* tables */
+.scroller{ overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+table.grid{ border-collapse:collapse; font-size:13px; width:100%; }
+table.grid th, table.grid td{ padding:5px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+table.grid thead th{ font-weight:500; color:var(--ink-2); background:var(--surface-2); text-align:right; position:sticky; top:0; }
+table.grid thead tr:first-child th{ text-align:center; color:var(--ink); border-left:1px solid var(--line); }
+table.grid thead th.rowh{ text-align:left; }
+table.grid td{ text-align:right; }
+table.grid td.rl{ text-align:left; color:var(--ink); position:sticky; left:0; background:var(--surface); max-width:300px; overflow:hidden; text-overflow:ellipsis; border-right:1px solid var(--line); }
+table.grid td.gstart, table.grid th.gstart{ border-left:1px solid var(--line); }
+td.up{ background:var(--up-bg); color:var(--up); font-weight:600; }
+td.down{ background:var(--down-bg); color:var(--down); font-weight:600; }
+td.neu{ background:var(--neu-bg); color:var(--neu); font-weight:600; }
+td .was{ display:block; font-weight:400; font-size:11px; color:var(--ink-2); }
+td.gone .v{ text-decoration:line-through; }
+.tblock{ margin-top:22px; }
+.tblock .thead{ display:flex; align-items:baseline; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+.count{ font-size:12.5px; color:var(--ink-2); background:var(--surface-2); padding:1px 8px; border-radius:20px; }
+
+/* change list */
+table.list{ border-collapse:collapse; width:100%; font-size:13.5px; }
+table.list th{ text-align:left; font-weight:500; color:var(--ink-2); background:var(--surface-2); padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap; position:sticky; top:0; }
+table.list th.num, table.list td.num{ text-align:right; }
+table.list td{ padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+table.list tr.sec td{ background:var(--bg); font-weight:600; padding-top:14px; color:var(--ink); }
+table.list tr.row{ cursor:pointer; }
+table.list tr.row:hover td{ background:var(--surface-2); }
+.delta.up{ color:var(--up); font-weight:600; }
+.delta.down{ color:var(--down); font-weight:600; }
+.delta.neu{ color:var(--neu); font-weight:600; }
+.pill{ font-size:11.5px; padding:1px 7px; border-radius:20px; background:var(--neu-bg); color:var(--neu); white-space:nowrap; }
+
+/* pages */
+.pagewrap{ margin-top:20px; }
+.pagehead{ display:flex; gap:10px; align-items:baseline; margin-bottom:8px; }
+.page{ position:relative; border:1px solid var(--line); border-radius:6px; overflow:hidden; background:#fff; max-width:100%; }
+.page canvas{ display:block; width:100%; height:auto; }
+.page .ov{ position:absolute; inset:0; }
+.hl{ position:absolute; border-radius:2px; cursor:help; }
+.hl.up{ background:rgba(27,99,168,.18); outline:1.5px solid #1b63a8; }
+.hl.down{ background:rgba(214,110,20,.22); outline:1.5px solid #c25f0b; }
+.hl.neu{ background:rgba(90,70,190,.16); outline:1.5px solid #5a46be; }
+.hl.gone{ background:transparent; outline:1.5px dashed #5a46be; }
+.hl.flash{ animation:flash 1.4s ease 2; }
+@keyframes flash{ 0%,100%{ box-shadow:0 0 0 0 rgba(200,16,46,0);} 50%{ box-shadow:0 0 0 6px rgba(200,16,46,.45);} }
+@media (prefers-reduced-motion: reduce){ .hl.flash{ animation:none; outline-width:3px; } .drop{ transition:none; } }
+.tip{ position:fixed; z-index:20; background:var(--ink); color:var(--bg); font-size:12.5px; padding:7px 10px; border-radius:6px; pointer-events:none; max-width:320px; line-height:1.4; display:none; }
+.tip b{ font-weight:600; }
+
+
+/* pdf-style comparison */
+.whatline{ font-size:15px; }
+.whatline b{ font-weight:600; }
+.sheet{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 22px 24px; margin-top:16px; }
+h2.sh{ font-family:"IBM Plex Sans",sans-serif; font-weight:400; font-size:19px; margin:26px 0 10px; color:var(--ink); }
+.sheet .scroller{ border:0; border-radius:0; }
+table.pdf{ border-collapse:collapse; width:100%; font-size:13px; }
+table.pdf th{ font-weight:500; text-align:right; padding:6px 10px; border-bottom:1px solid var(--line); white-space:nowrap; border-left:1px solid var(--line); }
+table.pdf th.mh, table.pdf th.vh{ border-left:0; }
+table.pdf td{ text-align:right; padding:4px 10px; white-space:nowrap; border-left:1px solid var(--line); }
+table.pdf td.mh{ text-align:left; vertical-align:top; font-weight:500; border-left:0; padding-top:6px; min-width:170px; white-space:normal; }
+table.pdf td.vh{ text-align:left; color:var(--ink-2); border-left:0; font-size:12.5px; }
+table.pdf td.left{ text-align:left; }
+table.pdf tbody.metric{ border-bottom:1px solid var(--line); }
+table.pdf tbody.metric:nth-of-type(even) td{ background:var(--surface-2); }
+table.pdf td.diff.up{ color:var(--up); font-weight:600; }
+table.pdf td.diff.down{ color:var(--down); font-weight:600; }
+table.pdf td.diff.neu{ color:var(--neu); font-weight:600; }
+table.pdf tr.chg td{ font-weight:600; padding-bottom:7px; }
+table.pdf tr.chg td.up{ color:var(--up); }
+table.pdf tr.chg td.down{ color:var(--down); }
+table.pdf tr.chg td.neu{ color:var(--neu); }
+table.pdf tr.chg td.nochg{ color:var(--ink-2); font-weight:400; }
+table.pdf tr.chg td.vh{ color:var(--ink); }
+.rel{ display:block; font-size:11px; font-weight:400; }
+.tag{ font-size:11px; background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:0 6px; color:var(--ink-2); margin-left:4px; }
+.legend{ margin-top:12px; }
+.bar{ margin-top:24px; }
+.filters select{ margin-left:4px; }
+
+.empty{ padding:28px; text-align:center; color:var(--ink-2); background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.hidden{ display:none !important; }
+.note{ font-size:13px; color:var(--ink-2); margin-top:10px; }
+@media (max-width:700px){
+  .headline .big{ font-size:34px; }
+  .files .hide-sm{ display:none; }
+  .wrap{ padding:0 12px 48px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div>
+      <h1>Admit packet compare</h1>
+      <p class="sub">Load two or more versions of the Admit Comparison packet to compare the key page 1 numbers after you change the simulated admits.</p>
+    </div>
+    <button class="btn" id="themeBtn" type="button" aria-label="Switch light or dark theme">Theme</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="drop" id="drop">
+    <div id="dropInner">
+      <h3>Drop packet PDFs here</h3>
+      <p>Add two or more. They stay in your browser; nothing is uploaded.</p>
+      <p style="margin-top:14px"><button class="btn primary" id="pickBtn" type="button">Choose PDFs</button></p>
+    </div>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+  </div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+
+  <section id="filesSec" class="hidden">
+    <div class="files">
+      <table>
+        <thead><tr><th>Version</th><th class="hide-sm">File</th><th class="hide-sm">Cells read</th><th class="center">Baseline</th><th class="center">Compare</th><th></th></tr></thead>
+        <tbody id="filesBody"></tbody>
+      </table>
+    </div>
+    <p class="note">Versions are ordered by the time stamp in the file name. Baseline is what you compare against; Compare is the version used for the Change row.</p>
+  </section>
+
+  <section id="results" class="hidden">
+    <div class="bar">
+      <div class="whatline" id="hlWhat"></div>
+      <div class="spacer"></div>
+      <div class="filters">
+        <label class="chk">Term <select id="fTerm" aria-label="Term"></select></label>
+        <label class="chk"><input type="checkbox" id="fPct"> Show % change</label>
+      </div>
+      <button class="btn small" id="copyBtn" type="button">Copy for Excel</button>
+    </div>
+    <div class="sheet" id="view"></div>
+    <div class="legend">
+      <span><i class="sw up"></i>Higher than baseline</span>
+      <span><i class="sw down"></i>Lower than baseline</span>
+    </div>
+  </section>
+</main>
+<div class="tip" id="tip"></div>
+
+<script>
+// ---- PARSER START ----
+const NUM_RE = /^\(?[-–]?\$?[-–]?\d[\d,]*(\.\d+)?[KMB]?%?\)?$/;
+const FALL_RE = /^(Fall|Spring|Summer|Winter) \d{4}$/;
+function norm(s){ return s.replace(/\s+/g,' ').trim(); }
+function mergeItems(items){
+  const its = items.map(i=>({...i, s:norm(i.s)})).filter(i=>i.s);
+  its.sort((a,b)=> Math.abs(a.y-b.y)<0.8 ? a.x-b.x : a.y-b.y);
+  const out=[];
+  for(const it of its){
+    const p=out[out.length-1];
+    if(p && Math.abs(p.y-it.y)<0.8){
+      const gap = it.x-(p.x+p.w);
+      if(gap>-1 && gap<1.5 && !/\.\.$/.test(p.s)){ p.s += (gap>0.6?' ':'')+it.s; p.w = it.x+it.w-p.x; p.h=Math.max(p.h,it.h); continue; }
+    }
+    out.push({...it});
+  }
+  return out;
+}
+function clusterBy(arr, key, tol){
+  const s=[...arr].sort((a,b)=>key(a)-key(b)); const groups=[];
+  for(const a of s){ const g=groups[groups.length-1];
+    if(g && Math.abs(key(a)-g.k)<=tol){ g.items.push(a); } else groups.push({k:key(a), items:[a]}); }
+  return groups;
+}
+function parsePages(pages){
+  const cells=[]; const tables=[];
+  pages.forEach((pg, pi)=>{
+    const items = mergeItems(pg.items);
+    const subtitle = items.filter(i=>i.y < pg.h*0.13 && i.x > pg.w*0.55 && !/Admit Comparison/i.test(i.s)).map(i=>i.s).join(' ') || ('Page '+(pi+1));
+    const falls = items.filter(i=>FALL_RE.test(i.s));
+    const headerLines = clusterBy(falls, i=>i.y, 1.2).map(g=>({y:g.k, items:g.items.sort((a,b)=>a.x-b.x)}));
+    let prevEnd = pg.h*0.12;
+    const pageMinX = Math.min(...items.map(i=>i.x));
+    headerLines.forEach((hl, ti)=>{
+      const nextY = ti+1<headerLines.length ? headerLines[ti+1].y : pg.h;
+      const dataStart = Math.min(...hl.items.map(i=>i.x)) - 4;
+      // group headers: closest non-numeric line just above header line
+      const gc = items.filter(i=>i.y<hl.y-1 && i.y>hl.y-32 && i.x>pageMinX+15 && !NUM_RE.test(i.s) && !FALL_RE.test(i.s));
+      let groups=[];
+      if(gc.length){ const maxY=Math.max(...gc.map(i=>i.y)); groups=gc.filter(i=>maxY-i.y<1.5).map(i=>({name:i.s, x:i.x})).sort((a,b)=>a.x-b.x); }
+      const cols = hl.items.map(f=>{
+        let g = groups.length ? groups[0].name : '';
+        for(const gr of groups){ if(gr.x <= f.x+f.w+2) g=gr.name; }
+        return {term:f.s, right:f.x+f.w, group:g};
+      });
+      const region = items.filter(i=>i.y>hl.y+1.5 && i.y<nextY-1);
+      const data = region.filter(i=>NUM_RE.test(i.s) && i.x+i.w>dataStart+8);
+      if(!data.length) return;
+      const rowsC = clusterBy(data, i=>i.y, 1.2);
+      const lastRowY = rowsC[rowsC.length-1].k;
+      const labels = region.filter(i=>i.x<dataStart-1 && !data.includes(i) && i.y<=lastRowY+10);
+      const minX = labels.length? Math.min(...labels.map(l=>l.x)) : 0;
+      const prim = labels.filter(l=>l.x<minX+10).sort((a,b)=>a.y-b.y);
+      const sec = labels.filter(l=>l.x>=minX+10);
+      const multi = sec.length>0;
+      const P=[];
+      const secAt = y=>{ let b=null,bd=3; for(const s of sec){ const d=Math.abs(s.y-y); if(d<bd){bd=d;b=s;} } return b; };
+      for(const l of prim){
+        const last=P[P.length-1];
+        const dSec = sec.length? Math.min(...sec.map(s=>Math.abs(s.y-l.y))) : 99;
+        const sl = secAt(l.y);
+        const wrap = multi && last && l.y-last.lastY<10 && (dSec>1.2 || (sl && !last.seen.has(sl.s)));
+        if(wrap){ last.text+=' '+l.s; last.lastY=l.y; if(sl) last.seen.add(sl.s); }
+        else P.push({y:l.y,lastY:l.y,text:l.s,seen:new Set(sl?[sl.s]:[])});
+        // record secondaries between this primary and the next
+      }
+      // fill seen sets fully: secondaries belonging to each primary span
+      P.forEach((p,k)=>{ const ny = k+1<P.length? P[k+1].y-2.5 : 1e9; sec.forEach(s=>{ if(s.y>=p.y-2.5 && s.y<ny) p.seen.add(s.s); }); });
+      // section title
+      const tc = items.filter(i=>i.y<hl.y-1 && i.y>prevEnd && i.x<dataStart && i.x<=pageMinX+15 && !NUM_RE.test(i.s));
+      let title='';
+      if(tc.length){ const maxY=Math.max(...tc.map(i=>i.y)); title=tc.filter(i=>maxY-i.y<1.5).map(i=>i.s).join(' '); }
+      prevEnd = lastRowY + 10;
+      const table = {id:'', page:pi+1, subtitle, title, name: title||subtitle, rows:[], cols:[]};
+      table.id = subtitle+' ▸ '+table.name+'#'+ti;
+      const colKeys = new Set();
+      cols.forEach(c=>{ const k=c.group+'|'+c.term; if(!colKeys.has(k)){colKeys.add(k); table.cols.push({group:c.group, term:c.term});} });
+      const seen = {};
+      rowsC.forEach(rc=>{
+        const ry = rc.k;
+        const ss = sec.filter(s=>Math.abs(s.y-ry)<3).sort((a,b)=>a.x-b.x).map(s=>s.s).join(' ');
+        let pr=''; for(const p of P){ if(p.y<=ry+2.5) pr=p.text; }
+        if(!pr && P.length && !multi) pr='';
+        let row = [pr, ss].filter(Boolean).join(' › ') || '(row)';
+        if(seen[row]!==undefined){ seen[row]++; row += ' ('+seen[row]+')'; } else seen[row]=0;
+        table.rows.push(row);
+        rc.items.forEach(it=>{
+          let col=null, best=1e9;
+          for(const c of cols){ const d=Math.abs(c.right-(it.x+it.w)); if(d<best){best=d; col=c;} }
+          if(!col || best>15) return;
+          cells.push({key: table.id+'|'+row+'|'+col.group+'|'+col.term, table: table.id, page:pi+1, row, group:col.group, term:col.term, value:it.s, rect:{x:it.x, y:it.y-it.h, w:it.w, h:it.h}});
+        });
+      });
+      tables.push(table);
+    });
+  });
+  // dedupe keys
+  const cnt={}; cells.forEach(c=>{ if(cnt[c.key]!==undefined){cnt[c.key]++; c.key+='~'+cnt[c.key];} else cnt[c.key]=0; });
+  return {cells, tables};
+}
+// ---- PARSER END ----
+
+
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const state = { files: [], baseId: null, cmpId: null, tab: 'list', seq: 0, renderToken: 0, pendingFocus: null };
+
+/* ---------- theme ---------- */
+(function(){
+  let saved = null; try { saved = localStorage.getItem('pc-theme'); } catch(e){}
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('#themeBtn').onclick = () => {
+    const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('pc-theme', next); } catch(e){}
+  };
+})();
+
+/* ---------- loading ---------- */
+function labelFromName(name){
+  const m = name.match(/(\d{2})(\d{2})(\d{4})[_\- ]?(\d{2})(\d{2})[_\- ]?(AM|PM)/i);
+  if (m){
+    let [_, mo, d, y, h, mi, ap] = m; let hh = +h % 12; if (ap.toUpperCase()==='PM') hh += 12;
+    const dt = new Date(+y, +mo-1, +d, hh, +mi);
+    const lbl = dt.toLocaleDateString(undefined,{month:'short', day:'numeric'}) + ', ' + dt.toLocaleTimeString(undefined,{hour:'numeric', minute:'2-digit'});
+    return { label: lbl, ts: dt.getTime() };
+  }
+  return { label: name.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ').trim(), ts: null };
+}
+async function readPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise;
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale: 1 });
+    const tc = await page.getTextContent();
+    const items = [];
+    for (const it of tc.items){
+      if (!it.str || !it.str.trim()) continue;
+      const [vx, vy] = vp.convertToViewportPoint(it.transform[4], it.transform[5]);
+      const fs = Math.hypot(it.transform[2], it.transform[3]) || it.height || 6;
+      items.push({ s: it.str, x: vx, y: vy, w: it.width, h: fs });
+    }
+    pages.push({ w: vp.width, h: vp.height, items });
+  }
+  return { pdf, pages };
+}
+async function addFiles(list){
+  const pdfs = [...list].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+  if (!pdfs.length){ setStatus('Those files are not PDFs. Add the packet PDFs exported from Tableau.', true); return; }
+  if (!window.pdfjsLib){ setStatus('The PDF reader did not load. Check your connection and reload the page.', true); return; }
+  const problems = [];
+  for (let k = 0; k < pdfs.length; k++){
+    const f = pdfs[k];
+    setStatus(`Reading ${f.name} (${k+1} of ${pdfs.length})…`);
+    try {
+      const { pdf, pages } = await readPdf(f);
+      const parsed = parsePages(pages);
+      if (!parsed.cells.length){ problems.push(`${f.name}: no packet tables found`); continue; }
+      const { label, ts } = labelFromName(f.name);
+      const cells = new Map(parsed.cells.map(c => [c.key, c]));
+      state.files.push({ id: 'f' + (++state.seq), name: f.name, label, ts: ts ?? f.lastModified, pdf, pageSizes: pages.map(p => ({ w: p.w, h: p.h })), cells, tables: parsed.tables, order: parsed.cells.map(c => c.key) });
+    } catch (e){
+      console.error(e); problems.push(`${f.name}: could not be read (${e.message || e})`);
+    }
+  }
+  state.files.sort((a,b) => a.ts - b.ts);
+  if (!state.files.find(f => f.id === state.baseId)) state.baseId = state.files[0]?.id ?? null;
+  const last = state.files[state.files.length-1];
+  if (pdfs.length && last) state.cmpId = (last.id !== state.baseId) ? last.id : (state.files.find(f => f.id !== state.baseId)?.id ?? null);
+  setStatus(problems.length ? problems.join(' · ') : '', !!problems.length);
+  refreshAll();
+}
+function setStatus(msg, err){ const s = $('#status'); s.textContent = msg; s.classList.toggle('err', !!err); }
+
+const drop = $('#drop'), input = $('#fileInput');
+$('#pickBtn').onclick = () => input.click();
+input.onchange = () => { addFiles(input.files); input.value = ''; };
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { e.preventDefault(); if (e.target.closest && !e.target.closest('#drop')) addFiles(e.dataTransfer.files); });
+
+/* ---------- values ---------- */
+function pv(s){
+  if (s == null) return null;
+  let t = String(s).replace(/[(),\s]/g,'').replace('–','-');
+  const pct = t.endsWith('%'); if (pct) t = t.slice(0,-1);
+  const dollar = t.includes('$'); t = t.replace('$','');
+  let mult = 1, suf = '';
+  if (/[KMB]$/.test(t)){ suf = t.slice(-1); mult = {K:1e3, M:1e6, B:1e9}[suf]; t = t.slice(0,-1); }
+  const n = parseFloat(t); if (isNaN(n)) return null;
+  const dec = (t.split('.')[1] || '').length;
+  return { n: n*mult, pct, dollar, suf, dec };
+}
+function fmtNum(x, dec){ return x.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function deltaInfo(a, b){
+  if (a == null && b == null) return { status:'same' };
+  if (a == null) return { status:'new', dir:'neu', text:'new' };
+  if (b == null) return { status:'gone', dir:'neu', text:'removed' };
+  if (a === b) return { status:'same' };
+  const A = pv(a), B = pv(b);
+  if (!A || !B) return { status:'changed', dir:'neu', text:'changed' };
+  const d = B.n - A.n; const sign = d > 0 ? '+' : (d < 0 ? '−' : '±'); const ab = Math.abs(d);
+  const dir = d > 0 ? 'up' : (d < 0 ? 'down' : 'neu');
+  let text, rel = null;
+  if (A.pct || B.pct){ text = sign + fmtNum(ab, Math.max(A.dec, B.dec, 1)) + ' pts'; }
+  else if (A.dollar || B.dollar){
+    const suf = B.suf || A.suf;
+    if (suf === 'M') text = sign + '$' + fmtNum(ab/1e6, Math.max(A.dec, B.dec, 1)) + 'M';
+    else if (suf === 'K') text = sign + '$' + fmtNum(ab/1e3, Math.max(A.dec, B.dec, 1)) + 'K';
+    else text = sign + '$' + fmtNum(ab, 0);
+  } else text = sign + fmtNum(ab, Math.max(A.dec, B.dec));
+  if (!A.pct && A.n !== 0) rel = d / Math.abs(A.n);
+  return { status:'changed', dir, text, rel, d };
+}
+function relText(r){ if (r == null || !isFinite(r)) return ''; const p = r*100; return (p>0?'+':p<0?'−':'') + fmtNum(Math.abs(p), Math.abs(p) < 10 ? 1 : 0) + '%'; }
+
+/* ---------- comparison model ---------- */
+function fileById(id){ return state.files.find(f => f.id === id); }
+function buildModel(){
+  const base = fileById(state.baseId), cmp = fileById(state.cmpId);
+  if (!base || !cmp) return null;
+  const tables = new Map();
+  const tableOrder = [];
+  const addTable = t => {
+    if (!tables.has(t.id)){ tables.set(t.id, { id:t.id, page:t.page, name:t.name, subtitle:t.subtitle, rows:[], cols:[], rowSet:new Set(), colSet:new Set() }); tableOrder.push(t.id); }
+    const T = tables.get(t.id);
+    t.rows.forEach(r => { if (!T.rowSet.has(r)){ T.rowSet.add(r); T.rows.push(r); } });
+    t.cols.forEach(c => { const k = c.group + '|' + c.term; if (!T.colSet.has(k)){ T.colSet.add(k); T.cols.push(c); } });
+  };
+  [base, cmp, ...state.files.filter(f => f !== base && f !== cmp)].forEach(f => f.tables.forEach(addTable));
+  const keys = []; const seen = new Set();
+  [base, cmp, ...state.files].forEach(f => f.order.forEach(k => { if (!seen.has(k)){ seen.add(k); keys.push(k); } }));
+  const rows = keys.map(k => {
+    const any = base.cells.get(k) || cmp.cells.get(k) || state.files.map(f => f.cells.get(k)).find(Boolean);
+    const vals = state.files.map(f => f.cells.get(k)?.value ?? null);
+    const a = base.cells.get(k)?.value ?? null, b = cmp.cells.get(k)?.value ?? null;
+    const di = deltaInfo(a, b);
+    const anyDiff = vals.some(v => v !== a);
+    return { key:k, table:any.table, row:any.row, group:any.group, term:any.term, page:any.page, a, b, vals, di, anyDiff };
+  });
+  const byKey = new Map(rows.map(r => [r.key, r]));
+  return { base, cmp, tables, tableOrder, rows, byKey };
+}
+let M = null;
+
+/* ---------- files table ---------- */
+function renderFiles(){
+  const sec = $('#filesSec');
+  sec.classList.toggle('hidden', !state.files.length);
+  const drop = $('#drop');
+  if (state.files.length){
+    drop.classList.add('compact');
+    $('#dropInner').innerHTML = `<p>${state.files.length < 2 ? 'Add at least one more version to compare.' : 'Drop more versions here to add them.'}</p><button class="btn small" id="pickBtn2" type="button">Add PDFs</button>`;
+    $('#pickBtn2').onclick = () => input.click();
+  }
+  $('#filesBody').innerHTML = state.files.map(f => `
+    <tr data-id="${f.id}">
+      <td><input type="text" value="${esc(f.label)}" aria-label="Version name" data-act="label"></td>
+      <td class="hide-sm"><span class="fn">${esc(f.name)}</span></td>
+      <td class="hide-sm">${f.cells.size.toLocaleString()} cells, ${f.pageSizes.length} pages</td>
+      <td class="center"><input type="radio" name="base" aria-label="Use as baseline" ${f.id===state.baseId?'checked':''} data-act="base"></td>
+      <td class="center"><input type="radio" name="cmp" aria-label="Use as compare" ${f.id===state.cmpId?'checked':''} data-act="cmp"></td>
+      <td><button class="btn small" data-act="remove" type="button">Remove</button></td>
+    </tr>`).join('');
+}
+$('#filesBody').addEventListener('change', e => {
+  const tr = e.target.closest('tr'); const f = fileById(tr.dataset.id); const act = e.target.dataset.act;
+  if (act === 'base'){ state.baseId = f.id; if (state.cmpId === f.id) state.cmpId = state.files.find(x => x.id !== f.id)?.id; refreshAll(); }
+  if (act === 'cmp'){ state.cmpId = f.id; if (state.baseId === f.id) state.baseId = state.files.find(x => x.id !== f.id)?.id; refreshAll(); }
+});
+$('#filesBody').addEventListener('input', e => {
+  if (e.target.dataset.act !== 'label') return;
+  const f = fileById(e.target.closest('tr').dataset.id); f.label = e.target.value || f.name;
+  clearTimeout(window._lt); window._lt = setTimeout(() => renderResults(), 300);
+});
+$('#filesBody').addEventListener('click', e => {
+  if (e.target.dataset.act !== 'remove') return;
+  const id = e.target.closest('tr').dataset.id;
+  state.files = state.files.filter(f => f.id !== id);
+  if (state.baseId === id) state.baseId = state.files[0]?.id ?? null;
+  if (state.cmpId === id || state.cmpId === state.baseId) state.cmpId = state.files.find(f => f.id !== state.baseId)?.id ?? null;
+  refreshAll();
+});
+
+/* ---------- page 1 comparison ---------- */
+// name = the field name shown; aliases = older names the same field has had in earlier packet exports
+const LAYOUT = [
+  { section: 'Admissions overview', rows: [
+    { name: 'Admits (Incl. Rescinds)' },
+    { name: 'Admit Goal (ED1)' },
+    { name: 'Admits Remaining to Goal' },
+  ] },
+  { section: 'Fin overview (All Admits)', rows: [
+    { name: 'Avg. Discount' },
+    { name: 'Total Scholarship Merit Amount', aliases: ['Scholarship Merit Amount'] },
+  ] },
+  { section: 'Behaviour/Engagement indicators', rows: [
+    { name: 'Campus Pref 1 %' },
+    { name: 'Attended Visit PIT' },
+  ] },
+  { section: 'Predicted Enrollment Overview', rows: [
+    { name: 'Projected Enroll', aliases: ['Projected Enrollment'] },
+    { name: 'Enrollment Goal' },
+    { name: 'Enrollment Remaining to Goal' },
+    { name: 'Projected Enroll Discount' },
+  ] },
+];
+// match ignoring case, spaces and punctuation, so “Admits (Incl. Rescinds)” finds “Admits (Incl Rescinds)”
+function findRow(T, spec){
+  const key = x => x.toLowerCase().replace(/[^a-z0-9%]+/g, '');
+  for (const want of [spec.name, ...(spec.aliases || [])]){
+    const hit = T.rows.find(r => key(r) === key(want));
+    if (hit) return hit;
+  }
+  return null;
+}
+function page1Table(name){
+  const norm = x => x.toLowerCase().replace(/\s+/g,' ').trim();
+  for (const id of M.tableOrder){ const T = M.tables.get(id); if (T.page === 1 && norm(T.name) === norm(name)) return T; }
+  return null;
+}
+function versions(){
+  // baseline first, then the others in time order
+  return [M.base, ...state.files.filter(f => f !== M.base)];
+}
+function fillFilters(){
+  const prev = $('#fTerm').value;
+  const terms = [...new Set(M.rows.filter(r => r.page === 1).map(r => r.term))].sort();
+  $('#fTerm').innerHTML = terms.map(t => `<option>${esc(t)}</option>`).join('');
+  $('#fTerm').value = terms.includes(prev) ? prev : terms[terms.length-1];
+}
+['#fTerm','#fPct'].forEach(id => $(id).addEventListener('change', () => renderView()));
+
+function refreshAll(){ renderFiles(); renderResults(); }
+function renderResults(){
+  const show = state.files.length >= 2 && state.baseId && state.cmpId;
+  $('#results').classList.toggle('hidden', !show);
+  if (!show){ M = null; return; }
+  M = buildModel();
+  fillFilters();
+  renderView();
+}
+function getCell(T, row, group, term, file){
+  return file.cells.get(T.id + '|' + row + '|' + group + '|' + term)?.value ?? null;
+}
+function renderView(){
+  if (!M) return;
+  const term = $('#fTerm').value;
+  const showPct = $('#fPct').checked;
+  const vers = versions();
+  const multi = vers.length > 2;
+  let changedCount = 0, h = '';
+  for (const block of LAYOUT){
+    const T = page1Table(block.section);
+    h += `<h2 class="sh">${esc(block.section)}</h2>`;
+    if (!T){ h += `<div class="empty">This section wasn’t found on page 1 of the packet.</div>`; continue; }
+    const groups = [...new Set(T.cols.filter(c => c.term === term).map(c => c.group))];
+    if (!groups.length){ h += `<div class="empty">No ${esc(term)} columns in this section.</div>`; continue; }
+    h += `<div class="scroller"><table class="pdf"><thead><tr><th class="mh"></th><th class="vh"></th>${groups.map(g => `<th>${esc(g)}</th>`).join('')}</tr></thead>`;
+    for (const spec of block.rows){
+      const row = findRow(T, spec);
+      if (!row){
+        h += `<tbody class="metric"><tr><td class="mh">${esc(spec.name)}</td><td class="vh"></td><td colspan="${groups.length}" class="muted left">Not found in this packet</td></tr></tbody>`;
+        continue;
+      }
+      const nRows = vers.length + 1;
+      h += `<tbody class="metric">`;
+      vers.forEach((f, i) => {
+        h += `<tr class="${f === M.base ? 'base' : ''}">`;
+        if (i === 0) h += `<td class="mh" rowspan="${nRows}">${esc(spec.name)}</td>`;
+        h += `<td class="vh">${esc(f.label)}${f === M.base ? ' <span class="tag">baseline</span>' : ''}</td>`;
+        h += groups.map(g => {
+          const v = getCell(T, row, g, term, f), a = getCell(T, row, g, term, M.base);
+          if (f === M.base) return `<td>${v == null ? '' : esc(v)}</td>`;
+          const d = deltaInfo(a, v);
+          return `<td class="${d.status !== 'same' ? 'diff ' + (d.dir || 'neu') : ''}">${v == null ? '' : esc(v)}</td>`;
+        }).join('');
+        h += `</tr>`;
+      });
+      // change row: compare vs baseline
+      h += `<tr class="chg"><td class="vh">Change${multi ? ` <span class="tag">${esc(M.cmp.label)}</span>` : ''}</td>` + groups.map(g => {
+        const a = getCell(T, row, g, term, M.base), b = getCell(T, row, g, term, M.cmp);
+        const d = deltaInfo(a, b);
+        if (d.status === 'same') return `<td class="nochg">${a == null && b == null ? '' : '–'}</td>`;
+        changedCount++;
+        const pct = showPct && d.rel != null ? `<span class="rel">${relText(d.rel)}</span>` : '';
+        return `<td class="${d.dir}">${esc(d.text)}${pct}</td>`;
+      }).join('') + `</tr></tbody>`;
+    }
+    h += `</table></div>`;
+  }
+  $('#view').innerHTML = h;
+  $('#hlWhat').innerHTML = `<b>${changedCount}</b> ${changedCount === 1 ? 'value' : 'values'} changed from <b>${esc(M.base.label)}</b> to <b>${esc(M.cmp.label)}</b> (${esc(term)})`;
+}
+
+
+/* ---------- copy ---------- */
+$('#copyBtn').onclick = async () => {
+  if (!M) return;
+  const term = $('#fTerm').value; const vers = versions();
+  const out = [];
+  for (const block of LAYOUT){
+    const T = page1Table(block.section); if (!T) continue;
+    const groups = [...new Set(T.cols.filter(c => c.term === term).map(c => c.group))];
+    out.push([block.section + ' (' + term + ')', '', ...groups].join('\t'));
+    for (const spec of block.rows){
+      const row = findRow(T, spec);
+      if (!row) continue;
+      vers.forEach(f => out.push([spec.name, f.label, ...groups.map(g => getCell(T, row, g, term, f) ?? '')].join('\t')));
+      out.push([spec.name, 'Change', ...groups.map(g => { const d = deltaInfo(getCell(T, row, g, term, M.base), getCell(T, row, g, term, M.cmp)); return d.status === 'same' ? '' : d.text; })].join('\t'));
+    }
+    out.push('');
+  }
+  const text = out.join('\n');
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch(e){
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch(_){}
+    ta.remove();
+  }
+  const b = $('#copyBtn'); b.textContent = ok ? 'Copied' : 'Copy failed'; setTimeout(() => b.textContent = 'Copy for Excel', 2000);
+};
+
+</script>
+</body>
+</html>
